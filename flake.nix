@@ -6,9 +6,7 @@
       };
 
       nix-ts = pkgs.yarn2nix-moretea.mkYarnPackage {
-        name = "nix-ts";
         src = ./.;
-
         buildPhase = "yarn build";
       };
     in

@@ -1,6 +1,9 @@
-import { NixExpression } from "nijs";
+import { jsToNix, NixExpression } from "nijs";
 
 let flake = () =>
-  new NixExpression("{ wget }: { packages.x86_64-linux.wget = wget; }");
+  jsToNix(
+    new NixExpression("{ wget }: { packages.x86_64-darwin.wget = wget; }"),
+    true
+  );
 
 export { flake };

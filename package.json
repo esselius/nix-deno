@@ -1,13 +1,10 @@
 {
   "name": "nix-ts",
-  "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "nijs": "^0.0.25",
     "typescript": "^4.2.4"
-  },
-  "scripts": {
-    "build": "tsc"
   }
 }

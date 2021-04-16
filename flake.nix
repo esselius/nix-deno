@@ -5,10 +5,36 @@
         system = "x86_64-darwin";
       };
 
-      nix-ts = pkgs.yarn2nix-moretea.mkYarnPackage {
-        src = ./.;
-        buildPhase = "yarn build";
-      };
+      mkDenoDrv = { name, lockfile, entrypoint }:
+        let
+          inherit (pkgs) lib fetchurl linkFarm writeText runCommand deno;
+          inherit (pkgs.lib) elemAt flatten mapAttrsToList importJSON;
+
+          urlPart = url: elemAt (flatten (builtins.split "://([a-z0-9\.]*)" url));
+          artifactPath = url: "${urlPart url 0}/${urlPart url 1}/${builtins.hashString "sha256" (urlPart url 2)}";
+          file = name: content: { inherit name; path = content; };
+
+          dependency = lock: flatten (mapAttrsToList
+            (url: sha256: [
+              (file "${artifactPath url}" (fetchurl { inherit url sha256; }))
+              (file "${artifactPath url}.metadata.json" (writeText "metadata.json" ''{"headers": {}, "url": ""}''))
+            ])
+            lock);
+
+          deps = lockfile: linkFarm "deps" (dependency (importJSON lockfile));
+        in
+        runCommand name { DENO_DIR = "deno"; } ''
+          mkdir -p "$DENO_DIR" "$out/bin"
+          ln -s "${deps lockfile}" "$DENO_DIR/deps"
+
+          ${deno}/bin/deno compile --unstable --lock="${lockfile}" --cached-only -o "$out/bin/$name" "${entrypoint}"
+        '';
     in
-    pkgs.callPackage (pkgs.runCommand "nix-ts" { } "${nix-ts}/libexec/nix-ts/deps/nix-ts/bin/nix-ts > $out") { };
+    {
+      defaultPackage.x86_64-darwin = mkDenoDrv {
+        name = "welcome";
+        entrypoint = ./src/index.ts;
+        lockfile = ./lock.json;
+      };
+    };
 }

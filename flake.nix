@@ -5,7 +5,7 @@
         system = "x86_64-darwin";
       };
 
-      mkDenoDrv = { name, lockfile, entrypoint }@args:
+      mkDenoDrv = { name, src, lockfile, entrypoint }:
         let
           inherit (builtins) split hashString;
           inherit (pkgs) lib fetchurl linkFarm writeText runCommand deno;
@@ -27,9 +27,12 @@
 
           deps = linkFarm "deps" (flatten (mapAttrsToList dep (importJSON lockfile)));
         in
-        runCommand name ({ DENO_DIR = "deno"; } // args) ''
-          mkdir -p "$DENO_DIR" "$out/bin"
+        runCommand name { inherit src lockfile entrypoint; } ''
+          export DENO_DIR=`mktemp -d`
           ln -s "${deps}" "$DENO_DIR/deps"
+          mkdir -p "$out/bin"
+
+          cd $src
 
           ${deno}/bin/deno compile --unstable --lock="$lockfile" --cached-only -o "$out/bin/$name" "$entrypoint"
         '';
@@ -37,7 +40,8 @@
     {
       defaultPackage.x86_64-darwin = mkDenoDrv {
         name = "welcome";
-        entrypoint = ./src/index.ts;
+        src = ./.;
+        entrypoint = "./src/index.ts";
         lockfile = ./lock.json;
       };
     };

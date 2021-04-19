@@ -42,13 +42,8 @@
               mv "$name" "$out/bin/"
             '';
           } // args);
-
-      nix-deno = mkDenoDrv {
-        name = "nix-deno";
-        src = ./.;
-        entrypoint = "./src/index.ts";
-        lockfile = ./lock.json;
-      };
     in
-    (import (pkgs.runCommand "nix-deno" { } "${nix-deno}/bin/nix-deno > $out") inputs);
+    {
+      overlay = final: prev: { inherit mkDenoDrv; };
+    };
 }

@@ -1,5 +1,5 @@
 {
-  outputs = { nixpkgs, ... }:
+  outputs = { nixpkgs, ... }@inputs:
     let
       pkgs = import nixpkgs {
         system = "x86_64-darwin";
@@ -42,13 +42,13 @@
               mv "$name" "$out/bin/"
             '';
           } // args);
-    in
-    {
-      defaultPackage.x86_64-darwin = mkDenoDrv {
-        name = "welcome";
+
+      nix-deno = mkDenoDrv {
+        name = "nix-deno";
         src = ./.;
         entrypoint = "./src/index.ts";
         lockfile = ./lock.json;
       };
-    };
+    in
+    (import (pkgs.runCommand "nix-deno" { } "${nix-deno}/bin/nix-deno > $out") inputs);
 }
